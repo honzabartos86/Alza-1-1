@@ -1,0 +1,7 @@
+{
+  "name": "Alza 1:1 Tool",
+  "description": "Nástroj pro SM a STL k analýze výkonu zaměstnanců a generování zpětné vazby pomocí AI a NVC metodiky.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

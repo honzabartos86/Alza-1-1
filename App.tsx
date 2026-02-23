@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, Upload, Mic, Square, FileText, Download, AlertCircle, User, Activity, CheckCircle, Bold, Italic, Underline, List, Palette, Highlighter } from 'lucide-react';
 import { EmployeeMetrics, ValidationError } from './types';
-import { generateFeedback } from './services/geminiService';
 import * as docx from 'docx';
 import saveAs from 'file-saver';
 

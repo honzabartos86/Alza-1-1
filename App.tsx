@@ -341,23 +341,40 @@ Kontext:
 - Jazyk výstupu: ${language}
 `;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const payload = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }]
+  };
+
+  let lastErrorText = "";
+  const retryDelays = [6000, 10000, 14000]; // 3 pokusy
+
+  for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }]
-      })
-    }
-  );
+      body: JSON.stringify(payload)
+    });
 
-  if (!res.ok) {
+    if (res.ok) {
+      const data = await res.json();
+      return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Prázdná odpověď od AI.";
+    }
+
     const errText = await res.text();
-    throw new Error(`Gemini API chyba ${res.status}: ${errText}`);
+    lastErrorText = `Gemini API chyba ${res.status}: ${errText}`;
+
+    // Retry jen pro rate-limit nebo dočasné chyby
+    if ((res.status === 429 || res.status >= 500) && attempt < retryDelays.length - 1) {
+      await new Promise((r) => setTimeout(r, retryDelays[attempt]));
+      continue;
+    }
+
+    throw new Error(lastErrorText);
   }
 
-  const data = await res.json();
+  throw new Error(lastErrorText || "Neznámá chyba při volání Gemini API.");
+
   return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Prázdná odpověď od AI.";
 };
 

@@ -318,6 +318,48 @@ const App: React.FC = () => {
       reader.readAsDataURL(blob);
     });
   };
+const generateFeedback = async (
+  employee: EmployeeMetrics,
+  _audioBase64: string | null,
+  notesText: string,
+  dateText: string,
+  language: string
+): Promise<string> => {
+  const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  if (!apiKey) throw new Error("Chybí VITE_GEMINI_API_KEY");
+
+  const prompt = `
+Jsi Store Manager společnosti Alza.
+Vytvoř profesionální manažerský zápis ve struktuře NVC.
+
+Kontext:
+- Měsíc: ${dateText}
+- Zaměstnanec: ${employee["Full name"]}
+- ASR/Hrs – cíl: ${employee["ASR/Hrs Target"]}, výsledek: ${employee["ASR/Hrs"]}, plnění: ${employee["ASR/Hrs Fill"]}
+- ASR Services/Hrs – cíl: ${employee["ASR Services/Hrs Target"]}, výsledek: ${employee["ASR_Services/Hrs"]}, plnění: ${employee["ASR Services/Hrs Fill"]}
+- Poznámky: ${notesText}
+- Jazyk výstupu: ${language}
+`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
+      })
+    }
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API chyba ${res.status}: ${errText}`);
+  }
+
+  const data = await res.json();
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Prázdná odpověď od AI.";
+};
 
   const handleGenerateFeedback = async () => {
     if (!selectedEmployee) return;
